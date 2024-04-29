@@ -5,6 +5,8 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 # Загрузка ресурсов NLTK
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -40,7 +42,8 @@ def extract_text_from_docx(docx_path):
         return None
 
 
-def preprocess_documents(folder_path, output_file):
+def preprocess_documents(folder_path):
+    # , output_file):
     preprocessed_texts = []
     document_text_mapping = {}
 
@@ -62,15 +65,27 @@ def preprocess_documents(folder_path, output_file):
                     preprocessed_texts.append(preprocessed_text)
                     document_text_mapping[filename] = preprocessed_text
 
-    # Сохранение предобработанных текстов в отдельном файле
-    with open(output_file, 'w', encoding='utf-8') as output_file:
-        for text in preprocessed_texts:
-            output_file.write(text + '\n')
+    # # Сохранение предобработанных текстов в отдельном файле
+    # with open(output_file, 'w', encoding='utf-8') as output_file:
+    #     for text in preprocessed_texts:
+    #         output_file.write(text + '\n')
 
-    return preprocessed_texts
+    # return preprocessed_texts
+
+    return preprocessed_texts, document_text_mapping
 
 
-# Пример использования
 folder_path = "./NIR"
-output_file = "preprocessed_texts.txt"
-preprocess_documents(folder_path, output_file)
+# output_file = "preprocessed_texts.txt"
+# preprocess_documents(folder_path, output_file)
+# Предобработка документов
+preprocessed_texts, document_text_mapping = preprocess_documents(folder_path)
+
+# Создание объекта TF-IDF векторизатора
+tfidf_vectorizer = TfidfVectorizer()
+
+# Преобразование предобработанных текстов в TF-IDF признаки
+tfidf_features = tfidf_vectorizer.fit_transform(preprocessed_texts)
+
+# Вывод размерности матрицы TF-IDF признаков
+print("Размерность матрицы TF-IDF признаков:", tfidf_features.shape)
