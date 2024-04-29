@@ -7,6 +7,9 @@ from nltk.stem import WordNetLemmatizer
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+from sklearn.cluster import KMeans
+import numpy as np
+
 # Загрузка ресурсов NLTK
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -89,3 +92,41 @@ tfidf_features = tfidf_vectorizer.fit_transform(preprocessed_texts)
 
 # Вывод размерности матрицы TF-IDF признаков
 print("Размерность матрицы TF-IDF признаков:", tfidf_features.shape)
+
+
+# Функция для выполнения алгоритма Fuzzy C-means
+def fuzzy_cmeans(tfidf_features, num_clusters, m=2, max_iter=100, tol=0.0001):
+    n_samples, n_features = tfidf_features.shape
+
+    # Инициализация центров кластеров
+    centers = np.random.rand(num_clusters, n_features)
+
+    # Итерационный процесс
+    for _ in range(max_iter):
+        # Расчет матрицы принадлежности
+        distances = np.linalg.norm(tfidf_features[:, np.newaxis] - centers, axis=2)
+        membership = 1 / distances ** (2 / (m - 1))
+        membership = (membership.T / np.sum(membership, axis=1)).T
+
+        # Обновление центров кластеров
+        new_centers = np.dot(membership.T, tfidf_features) / np.sum(membership, axis=0)[:, np.newaxis]
+
+        # Проверка на сходимость
+        if np.linalg.norm(new_centers - centers) < tol:
+            break
+
+        centers = new_centers
+
+    # Определение принадлежности кластерам
+    labels = np.argmax(membership, axis=1)
+
+    return labels
+
+
+# Пример использования
+num_clusters = 5  # Количество кластеров
+labels = fuzzy_cmeans(tfidf_features.toarray(), num_clusters)
+
+# Вывод меток кластеров для каждого документа
+for i, label in enumerate(labels):
+    print(f"Документ {i+1} отнесен к кластеру {label}")
