@@ -97,7 +97,7 @@ weights = np.random.rand(input_size, num_clusters)
 #
 
 # Обучение Fuzzy ART
-cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(tfidf_features.toarray().T, num_clusters, rho, error=0.005, maxiter=100000)
+cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(tfidf_features.toarray().T, num_clusters, rho, error=0.005, maxiter=1000)
 
 # Оценка кластеризации текущих текстовых документов
 cluster_membership = np.argmax(u, axis=0)
