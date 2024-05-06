@@ -76,7 +76,6 @@ def cluster_documents(documents):
     return fcm.predict(tfidf_reduced)
 
 
-
 if __name__ == "__main__":
     documents_directory = "./TEST"
     documents, document_names = load_documents(documents_directory)
