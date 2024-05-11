@@ -101,7 +101,7 @@ def visualize_clusters():
     documents, document_names = load_documents(directory)
     labels, silhouette_values = cluster_documents(documents)
 
-    # Очищаем текстовое поле
+    # очистка текстового поля
     text_output.delete(1.0, tk.END)
 
     # Выводим информацию о кластерах в текстовое поле
@@ -112,7 +112,7 @@ def visualize_clusters():
         for doc_name in cluster_docs:
             text_output.insert(tk.END, f"  - {doc_name}\n")
 
-    # Визуализация кластеров
+    # визуализация кластеров
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
     scatter = ax.scatter(range(len(labels)), labels, c=labels, cmap='viridis')
@@ -121,40 +121,53 @@ def visualize_clusters():
     ax.set_ylabel('Cluster')
     fig.colorbar(scatter, ax=ax, label='Cluster')
 
-    # Вставляем график в Tkinter
+    # отображение графиков
     canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+def clear_data():
+    text_output.delete(1.0, tk.END)
+    documents_directory.set("")
+    graph_frame.destroy()
 
-# Создаем графический интерфейс
+
+# настройка параметров окна
 root = tk.Tk()
 root.title("Кластеризация текстовых документов")
-
+root.geometry("1300x700+{}+{}".format((root.winfo_screenwidth() - 1300)// 2, (root.winfo_screenheight() - 700) // 2))
+root.configure(bg="azure4")
 
 documents_directory = tk.StringVar()
 
-label = tk.Label(root, text="Выберите папку с документами:")
-label.pack()
+label = tk.Label(root, text="Выберите папку с документами:", bg="ivory2",font=("Open Sans", 11))
+label.pack(side=tk.TOP,pady=5)
 
-entry = tk.Entry(root, textvariable=documents_directory)
-entry.pack()
+entry = tk.Entry(root, textvariable=documents_directory, font=("Open Sans", 10), width=50)
+entry.pack(padx=7, pady=5)
 
-browse_button = tk.Button(root, text="Выбрать", command=browse_button)
-browse_button.pack()
+browse_button = tk.Button(root, text="Выбрать", command=browse_button, bg="honeydew2", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
+browse_button.pack(padx=7, pady=5)
 
-cluster_button = tk.Button(root, text="Кластеризация", command=visualize_clusters)
-cluster_button.pack()
+# фрейм для кнопок
+button_frame = tk.Frame(root, bg="azure4")
+button_frame.pack(fill=tk.X)
 
-# Создаем рамки для текстового поля и графика
-text_frame = tk.LabelFrame(root, text="Кластеры")
+cluster_button = tk.Button(button_frame, text="Кластеризация", command=visualize_clusters, bg="light blue", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
+cluster_button.pack(side=tk.LEFT, padx=225, pady=15)
+
+clear_button = tk.Button(button_frame, text="Очистить", command=clear_data, bg="light blue", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
+clear_button.pack(side=tk.RIGHT, padx=225, pady=15)
+
+# рамка для текстового поля и графика
+text_frame = tk.LabelFrame(root, text="Кластеры",font=("Open Sans", 10))
 text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-graph_frame = tk.LabelFrame(root, text="Графики")
+graph_frame = tk.LabelFrame(root, text="График", font=("Open Sans", 10))
 graph_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-# Создаем текстовое поле для вывода информации о кластерах
-text_output = tk.Text(text_frame, height=10, width=50)
+# текстовое поле для вывода информации о кластерах
+text_output = tk.Text(text_frame, height=10, width=20)
 text_output.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
 root.mainloop()
