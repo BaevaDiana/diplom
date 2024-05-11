@@ -1,5 +1,6 @@
 import os
 import docx2txt
+import PyPDF2
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -38,8 +39,26 @@ def extract_text_from_docx(docx_path):
         text = docx2txt.process(docx_path)
         return text
     except Exception as e:
-        messagebox.showerror("Ошибка!", f"Произошла ошибка при извлечении текста из документа {e}")
+        messagebox.showerror("Ошибка!", f"Произошла ошибка при извлечении текста из Word: {e}")
         return None
+
+def extract_text_from_pdf(pdf_path):
+    try:
+        # Открытие PDF-файла
+        with open(pdf_path, 'rb') as file:
+            # Создание объекта PDFReader
+            pdf_reader = PyPDF2.PdfReader(file)
+            # Инициализация переменной для хранения текста
+            text = ""
+            # Чтение каждой страницы PDF-файла
+            for page in pdf_reader.pages:
+                # Извлечение текста с каждой страницы и добавление его к общему тексту
+                text += page.extract_text()
+            return text
+    except Exception as e:
+        messagebox.showerror("Ошибка!", f"Произошла ошибка при извлечении текста из PDF: {e}")
+        return None
+
 
 
 def load_documents(directory):
@@ -52,6 +71,11 @@ def load_documents(directory):
                 document_names.append(filename)
         elif filename.endswith(".docx"):
             text = extract_text_from_docx(os.path.join(directory, filename))
+            if text:
+                documents.append(preprocess_text(text))
+                document_names.append(filename)
+        elif filename.endswith(".pdf"):
+            text = extract_text_from_pdf(os.path.join(directory, filename))
             if text:
                 documents.append(preprocess_text(text))
                 document_names.append(filename)
@@ -88,7 +112,15 @@ def cluster_documents(documents):
     labels = fcm.predict(tfidf_reduced)
 
     # Вычисляем силуэт для каждого документа
-    silhouette_values = silhouette_samples(tfidf_matrix, labels)
+    # silhouette_values = silhouette_samples(tfidf_matrix, labels)
+
+    # Если у нас есть только один кластер, обработаем его отдельно
+    if len(set(labels)) < 2:
+        messagebox.showwarning("Предупреждение!", "Всего один кластер.")
+        silhouette_values = 0
+    else:
+        # Вычисляем силуэт для каждого документа
+        silhouette_values = silhouette_samples(tfidf_matrix, labels)
 
     return labels, silhouette_values
 
@@ -109,6 +141,16 @@ def visualize_clusters():
     if documents is not None:
         labels, silhouette_values = cluster_documents(documents)
         if labels is not None and silhouette_values is not None:
+            if len(set(labels)) < 2:
+                messagebox.showwarning("Предупреждение!", "Всего один кластер. График невозможно построить.")
+                text_output.delete(1.0, tk.END)
+                text_output.insert(tk.END, "Документы, разбитые на кластеры:\n")
+                cluster_docs = [doc_name for doc_name, label in zip(document_names, labels)]
+                text_output.insert(tk.END, f"Кластер 0:\n")
+                for doc_name in cluster_docs:
+                    text_output.insert(tk.END, f"  - {doc_name}\n")
+                return
+
             text_output.delete(1.0, tk.END)
 
             # информация о кластерах в текстовое поле

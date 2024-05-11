@@ -1,4 +1,5 @@
 import os
+import PyPDF2
 import docx2txt
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -35,6 +36,22 @@ def extract_text_from_docx(docx_path):
         print(f"Ошибка извлечения текста из {docx_path}: {e}")
         return None
 
+def extract_text_from_pdf(pdf_path):
+    try:
+        # Открытие PDF-файла
+        with open(pdf_path, 'rb') as file:
+            # Создание объекта PDFReader
+            pdf_reader = PyPDF2.PdfReader(file)
+            # Инициализация переменной для хранения текста
+            text = ""
+            # Чтение каждой страницы PDF-файла
+            for page in pdf_reader.pages:
+                # Извлечение текста с каждой страницы и добавление его к общему тексту
+                text += page.extract_text()
+            return text
+    except Exception as e:
+        print(f"Произошла ошибка при извлечении текста из PDF: {e}")
+        return None
 
 def load_documents(directory):
     documents = []
@@ -46,6 +63,11 @@ def load_documents(directory):
                 document_names.append(filename)
         elif filename.endswith(".docx"):
             text = extract_text_from_docx(os.path.join(directory, filename))
+            if text:
+                documents.append(preprocess_text(text))
+                document_names.append(filename)
+        elif filename.endswith(".pdf"):
+            text = extract_text_from_pdf(os.path.join(directory, filename))
             if text:
                 documents.append(preprocess_text(text))
                 document_names.append(filename)
