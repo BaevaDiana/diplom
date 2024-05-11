@@ -133,6 +133,7 @@ def visualize_clusters():
             canvas.draw()
             canvas.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+# кнопка "Очистить"
 def clear_data():
     text_output.delete(1.0, tk.END)
     documents_directory.set("")
@@ -146,7 +147,7 @@ def clear_data():
 root = tk.Tk()
 root.title("Кластеризация текстовых документов")
 root.geometry("1300x700+{}+{}".format((root.winfo_screenwidth() - 1300)// 2, (root.winfo_screenheight() - 700) // 2))
-root.configure(bg="grey80")
+root.configure(bg="azure4")
 
 documents_directory = tk.StringVar()
 
@@ -156,24 +157,24 @@ label.pack(side=tk.TOP,pady=5)
 entry = tk.Entry(root, textvariable=documents_directory, font=("Open Sans", 10), width=50)
 entry.pack(padx=7, pady=5)
 
-browse_button = tk.Button(root, text="Выбрать", command=browse_button, bg="ivory3", font=("Open Sans", 10, "bold"), cursor="hand2")
+browse_button = tk.Button(root, text="Выбрать", command=browse_button, bg="grey75", font=("Open Sans", 10, "bold"), cursor="hand2")
 browse_button.pack(padx=7, pady=5)
 
 # фрейм для кнопок
-button_frame = tk.Frame(root, bg="grey80")
+button_frame = tk.Frame(root, bg="azure4")
 button_frame.pack(fill=tk.X)
 
-cluster_button = tk.Button(button_frame, text="Кластеризация", command=visualize_clusters, bg="light blue", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
+cluster_button = tk.Button(button_frame, text="Кластеризация", command=visualize_clusters, bg="grey75", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
 cluster_button.pack(side=tk.LEFT, padx=225, pady=15)
 
-clear_button = tk.Button(button_frame, text="Очистить", command=clear_data, bg="light blue", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
+clear_button = tk.Button(button_frame, text="Очистить", command=clear_data, bg="grey75", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
 clear_button.pack(side=tk.RIGHT, padx=225, pady=15)
 
 # рамка для текстового поля и графика
 text_frame = tk.LabelFrame(root, text="Кластеры",font=("Open Sans", 10))
 text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-graph_frame = tk.LabelFrame(root, text="График", font=("Open Sans", 10))
+graph_frame = tk.LabelFrame(root, text="График", font=("Open Sans", 10),)
 graph_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
 # текстовое поле для вывода информации о кластерах
