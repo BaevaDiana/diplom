@@ -8,7 +8,7 @@ from sklearn.decomposition import TruncatedSVD
 from fcmeans import FCM
 from sklearn.metrics import silhouette_samples
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -38,7 +38,7 @@ def extract_text_from_docx(docx_path):
         text = docx2txt.process(docx_path)
         return text
     except Exception as e:
-        print(f"Ошибка извлечения текста из {docx_path}: {e}")
+        messagebox.showerror("Ошибка!", f"Произошла ошибка при извлечении текста из документа {e}")
         return None
 
 
@@ -55,12 +55,15 @@ def load_documents(directory):
             if text:
                 documents.append(preprocess_text(text))
                 document_names.append(filename)
+        else:
+            messagebox.showerror("Ошибка!", "В папке должны быть текстовые документы.")
+            return None, None
     return documents, document_names
 
 
 def cluster_documents(documents):
     if not documents:
-        print("Нет документов для кластеризации.")
+        messagebox.showerror("Ошибка!", "Нет документов для кластеризации.")
         return None, None
     # Создание объекта TfidfVectorizer для преобразования текстовых документов в матрицу TF-IDF
     # max_df и min_df устанавливают пороговые значения для отбора слов в TF-IDF матрице
@@ -98,59 +101,66 @@ def browse_button():
 
 def visualize_clusters():
     directory = documents_directory.get()
+    if not directory:
+        messagebox.showerror("Ошибка!", "Выберите папку с текстовыми документами.")
+        return
+
     documents, document_names = load_documents(directory)
-    labels, silhouette_values = cluster_documents(documents)
+    if documents is not None:
+        labels, silhouette_values = cluster_documents(documents)
+        if labels is not None and silhouette_values is not None:
+            text_output.delete(1.0, tk.END)
 
-    # очистка текстового поля
-    text_output.delete(1.0, tk.END)
+            # информация о кластерах в текстовое поле
+            text_output.insert(tk.END, "Документы, разбитые на кластеры:\n")
+            for cluster in set(labels):
+                cluster_docs = [doc_name for doc_name, label in zip(document_names, labels) if label == cluster]
+                text_output.insert(tk.END, f"Кластер {cluster}:\n")
+                for doc_name in cluster_docs:
+                    text_output.insert(tk.END, f"  - {doc_name}\n")
 
-    # Выводим информацию о кластерах в текстовое поле
-    text_output.insert(tk.END, "Документы, разбитые на кластеры:\n")
-    for cluster in set(labels):
-        cluster_docs = [doc_name for doc_name, label in zip(document_names, labels) if label == cluster]
-        text_output.insert(tk.END, f"Кластер {cluster}:\n")
-        for doc_name in cluster_docs:
-            text_output.insert(tk.END, f"  - {doc_name}\n")
+            # визуализация кластеров
+            fig = plt.figure(figsize=(8, 6))
+            ax = fig.add_subplot(111)
+            scatter = ax.scatter(range(len(labels)), labels, c=labels, cmap='viridis')
+            ax.set_title('Clusters')
+            ax.set_xlabel('Documents')
+            ax.set_ylabel('Cluster')
+            fig.colorbar(scatter, ax=ax, label='Cluster')
 
-    # визуализация кластеров
-    fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(111)
-    scatter = ax.scatter(range(len(labels)), labels, c=labels, cmap='viridis')
-    ax.set_title('Clusters')
-    ax.set_xlabel('Documents')
-    ax.set_ylabel('Cluster')
-    fig.colorbar(scatter, ax=ax, label='Cluster')
-
-    # отображение графиков
-    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+            # отображение графиков
+            canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
 def clear_data():
     text_output.delete(1.0, tk.END)
     documents_directory.set("")
+    global graph_frame
     graph_frame.destroy()
+    graph_frame = tk.LabelFrame(root, text="График", font=("Open Sans", 10))
+    graph_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
 
 # настройка параметров окна
 root = tk.Tk()
 root.title("Кластеризация текстовых документов")
 root.geometry("1300x700+{}+{}".format((root.winfo_screenwidth() - 1300)// 2, (root.winfo_screenheight() - 700) // 2))
-root.configure(bg="azure4")
+root.configure(bg="grey80")
 
 documents_directory = tk.StringVar()
 
-label = tk.Label(root, text="Выберите папку с документами:", bg="ivory2",font=("Open Sans", 11))
+label = tk.Label(root, text="Выберите папку с документами:", bg="ivory3",font=("Open Sans", 11))
 label.pack(side=tk.TOP,pady=5)
 
 entry = tk.Entry(root, textvariable=documents_directory, font=("Open Sans", 10), width=50)
 entry.pack(padx=7, pady=5)
 
-browse_button = tk.Button(root, text="Выбрать", command=browse_button, bg="honeydew2", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
+browse_button = tk.Button(root, text="Выбрать", command=browse_button, bg="ivory3", font=("Open Sans", 10, "bold"), cursor="hand2")
 browse_button.pack(padx=7, pady=5)
 
 # фрейм для кнопок
-button_frame = tk.Frame(root, bg="azure4")
+button_frame = tk.Frame(root, bg="grey80")
 button_frame.pack(fill=tk.X)
 
 cluster_button = tk.Button(button_frame, text="Кластеризация", command=visualize_clusters, bg="light blue", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
