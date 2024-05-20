@@ -6,8 +6,9 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
-from fcmeans import FCM
 from sklearn.metrics import silhouette_samples
+import numpy as np
+import skfuzzy as fuzz
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import matplotlib.pyplot as plt
@@ -19,12 +20,11 @@ stop_words_ru = set(stopwords.words('russian'))
 # инициализация лемматизатора
 lemmatizer = WordNetLemmatizer()
 
-
 def preprocess_text(text):
     # токенизация текста
     tokens = word_tokenize(text.lower())
 
-    # фильтрация токенов, а также лемматизация
+    # фильтрация токенов и лемматизация
     tokens = [lemmatizer.lemmatize(word) for word in tokens if word.isalnum()
               and word not in stop_words_en and word not in stop_words_ru]
 
@@ -90,11 +90,13 @@ def load_documents(directory):
     return documents, document_names
 
 
+# кластеризация с использованием нечеткой нейронной сети
 def cluster_documents(documents):
     if not documents:
         messagebox.showerror("Ошибка!", "Нет документов для кластеризации.")
         return None, None
 
+    # векторизация текста
     # создание объекта TfidfVectorizer для преобразования текстовых документов в матрицу TF-IDF
     vectorizer = TfidfVectorizer(max_df=0.9, min_df=0.1)
     # преобразование текстовых документов в TF-IDF матрицу
@@ -105,12 +107,33 @@ def cluster_documents(documents):
     # применение метода fit_transform к TF-IDF матрице для уменьшения размерности
     tfidf_reduced = svd.fit_transform(tfidf_matrix)
 
-    # создание объекта FCM (Fuzzy C-Means) для кластеризации
-    fcm = FCM()
-    # обучение модели FCM
-    fcm.fit(tfidf_reduced)
-    # получение меток кластеров
-    labels = fcm.predict(tfidf_reduced)
+    # создание массива данных
+    data = np.array(tfidf_reduced)
+    # критерий останова
+    min_delta_fpc = 0.001
+    prev_fpc = -np.inf
+
+    # поиск оптимального количества кластеров
+    # начальное значение параметра нечеткости
+    m = 1.1
+    k = 1
+    while True:
+        # обучение нечеткой нейронной сети
+        cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+            data.T, c=k, m=m, error=0.005, maxiter=1000, init=None
+        )
+
+        # проверка критерия останова
+        if abs(fpc - prev_fpc) < min_delta_fpc:
+            break
+
+        # обновление параметра нечеткости
+        prev_fpc = fpc
+        m += 0.1
+        k+=1
+
+    # преобразование результатов в метки кластеров
+    labels = np.argmax(u, axis=0)
 
     # вычисление силуэта для каждого документа
     if len(set(labels)) < 2:
@@ -154,13 +177,12 @@ def visualize_clusters():
 
             text_output.delete(1.0, tk.END)
 
-
             # информация о кластерах и силуэтах в текстовое поле
             text_output.insert(tk.END, "Документы, разбитые на кластеры:\n")
             silhouette_dict = {i: [] for i in set(labels)}
             for doc_name, label, silhouette in zip(document_names, labels, silhouette_values):
                 silhouette_dict[label].append((doc_name, silhouette))
-            # вывод кластеры по порядку, название документа и его значение силуэта
+            # вывод кластеров по порядку, название документа и его значение силуэта
             for cluster in sorted(silhouette_dict.keys()):
                 text_output.insert(tk.END, f"\nКластер {cluster}:\n")
                 for doc_name, silhouette in silhouette_dict[cluster]:
@@ -193,7 +215,6 @@ def clear_data():
     graph_frame.destroy()
     graph_frame = tk.LabelFrame(root, text="График", font=("Open Sans", 10))
     graph_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-
 
 # настройка параметров окна
 root = tk.Tk()
