@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import shutil
 
 # загрузка списка стоп-слов
 stop_words_en = set(stopwords.words('english'))
@@ -207,6 +208,41 @@ def visualize_clusters():
             canvas.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
 
+def create_cluster_folders():
+    # получение директории
+    directory = documents_directory.get()
+    if not directory:
+        messagebox.showerror("Ошибка!", "Выберите папку с текстовыми документами.")
+        return
+
+    # определение родительской директории
+    parent_directory = os.path.dirname(directory)
+    if not parent_directory:
+        messagebox.showerror("Ошибка!", "Не удалось определить родительскую директорию.")
+        return
+
+    # загрузка файлов
+    documents, document_names = load_documents(directory)
+    if documents is not None:
+        # кластерный анализ
+        labels, _ = cluster_documents(documents)
+        if labels is not None:
+            cluster_dirs = {}
+            for label in set(labels):
+                # создание папок для кластеров
+                cluster_dir = os.path.join(parent_directory, f"Cluster_{label}")
+                os.makedirs(cluster_dir, exist_ok=True)
+                cluster_dirs[label] = cluster_dir
+
+            for doc_name, label in zip(document_names, labels):
+                # копирование файлов в соответствующие папки кластеров
+                src_path = os.path.join(directory, doc_name)
+                dest_path = os.path.join(cluster_dirs[label], doc_name)
+                shutil.copy2(src_path, dest_path)
+
+            messagebox.showinfo("Успех", "Папки кластеров успешно созданы и файлы скопированы.")
+
+
 # кнопка "Очистить"
 def clear_data():
     text_output.delete(1.0, tk.END)
@@ -242,6 +278,10 @@ cluster_button.pack(side=tk.LEFT, padx=225, pady=15)
 
 clear_button = tk.Button(button_frame, text="Очистить", command=clear_data, bg="grey75", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
 clear_button.pack(side=tk.RIGHT, padx=225, pady=15)
+
+# кнопка для создания папок
+create_folders_button = tk.Button(button_frame, text="Создать папки", command=create_cluster_folders, font=("Open Sans", 10,"bold"), bg="grey75",cursor="hand2")
+create_folders_button.pack(side=tk.LEFT,padx=35, pady=15)
 
 # рамка для текстового поля и графика
 text_frame = tk.LabelFrame(root, text="Кластеры",font=("Open Sans", 10))
