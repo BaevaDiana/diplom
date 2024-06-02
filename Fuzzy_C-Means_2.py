@@ -136,15 +136,20 @@ def cluster_documents(documents):
     # преобразование результатов в метки кластеров
     labels = np.argmax(u, axis=0)
 
+    # преобразование меток в непрерывные индексы начиная с 0
+    unique_labels = np.unique(labels)
+    label_map = {old_label: new_label for new_label, old_label in enumerate(unique_labels)}
+    continuous_labels = np.array([label_map[label] for label in labels])
+
     # вычисление силуэта для каждого документа
-    if len(set(labels)) < 2:
+    if len(set(continuous_labels)) < 2:
         # отдельная обработка случая с одним кластером
         messagebox.showwarning("Предупреждение!", "Выделен всего один кластер.")
         silhouette_values = 0
     else:
-        silhouette_values = silhouette_samples(tfidf_matrix, labels)
+        silhouette_values = silhouette_samples(tfidf_matrix, continuous_labels)
 
-    return labels, silhouette_values
+    return continuous_labels, silhouette_values
 
 
 def browse_button():
@@ -212,7 +217,7 @@ def create_cluster_folders():
     # получение директории
     directory = documents_directory.get()
     if not directory:
-        messagebox.showerror("Ошибка!", "Выберите папку с текстовыми документами.")
+        messagebox.showerror("Ошибка!", "Выберите папку с документами.")
         return
 
     # определение родительской директории
@@ -240,8 +245,33 @@ def create_cluster_folders():
                 dest_path = os.path.join(cluster_dirs[label], doc_name)
                 shutil.copy2(src_path, dest_path)
 
-            messagebox.showinfo("Успех", "Папки кластеров успешно созданы и файлы скопированы.")
+            messagebox.showinfo("Выполнено", "Папки кластеров успешно созданы и файлы скопированы.")
 
+
+def delete_cluster_folders():
+    # получение директории
+    directory = documents_directory.get()
+    if not directory:
+        messagebox.showerror("Ошибка!", "Выберите папку с документами.")
+        return
+
+    # определение родительской директории
+    parent_directory = os.path.abspath(os.path.join(directory, os.pardir))
+    if not parent_directory:
+        messagebox.showerror("Ошибка!", "Не удалось определить родительскую директорию.")
+        return
+
+    # удаление директорий кластеров
+    documents, document_names = load_documents(directory)
+    if documents is not None:
+        labels, _ = cluster_documents(documents)
+        if labels is not None:
+            for label in set(labels):
+                cluster_dir = os.path.join(parent_directory, f"Cluster_{label}")
+                if os.path.exists(cluster_dir):
+                    shutil.rmtree(cluster_dir)
+
+            messagebox.showinfo("Выполнено", "Папки кластеров успешно удалены.")
 
 # кнопка "Очистить"
 def clear_data():
@@ -271,17 +301,19 @@ browse_button.pack(padx=7, pady=5)
 
 # фрейм для кнопок
 button_frame = tk.Frame(root, bg="azure4")
-button_frame.pack(fill=tk.X)
+button_frame.pack(fill=tk.BOTH)
 
 cluster_button = tk.Button(button_frame, text="Кластеризация", command=visualize_clusters, bg="grey75", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
-cluster_button.pack(side=tk.LEFT, padx=225, pady=15)
+cluster_button.pack(side=tk.LEFT, padx=(200, 100), pady=15)
+
+create_folders_button = tk.Button(button_frame, text="Создать папки", command=create_cluster_folders, bg="grey75", font=("Open Sans", 10, "bold"), cursor="hand2")
+create_folders_button.pack(side=tk.LEFT, padx=(100, 0), pady=15)
 
 clear_button = tk.Button(button_frame, text="Очистить", command=clear_data, bg="grey75", fg="black", font=("Open Sans", 10, "bold"), cursor="hand2")
-clear_button.pack(side=tk.RIGHT, padx=225, pady=15)
+clear_button.pack(side=tk.RIGHT, padx=(0, 100), pady=15)
 
-# кнопка для создания папок
-create_folders_button = tk.Button(button_frame, text="Создать папки", command=create_cluster_folders, font=("Open Sans", 10,"bold"), bg="grey75",cursor="hand2")
-create_folders_button.pack(side=tk.LEFT,padx=35, pady=15)
+delete_folders_button = tk.Button(button_frame, text="Удалить папки", command=delete_cluster_folders, bg="grey75", font=("Open Sans", 10, "bold"), cursor="hand2")
+delete_folders_button.pack(side=tk.RIGHT, padx=(100, 200), pady=15)
 
 # рамка для текстового поля и графика
 text_frame = tk.LabelFrame(root, text="Кластеры",font=("Open Sans", 10))
