@@ -219,13 +219,11 @@ def create_cluster_folders():
     if not directory:
         messagebox.showerror("Ошибка!", "Выберите папку с документами.")
         return
-
     # определение родительской директории
     parent_directory = os.path.dirname(directory)
     if not parent_directory:
         messagebox.showerror("Ошибка!", "Не удалось определить родительскую директорию.")
         return
-
     # загрузка файлов
     documents, document_names = load_documents(directory)
     if documents is not None:
@@ -247,20 +245,17 @@ def create_cluster_folders():
 
             messagebox.showinfo("Выполнено", "Папки кластеров успешно созданы и файлы скопированы.")
 
-
 def delete_cluster_folders():
     # получение директории
     directory = documents_directory.get()
     if not directory:
         messagebox.showerror("Ошибка!", "Выберите папку с документами.")
         return
-
     # определение родительской директории
     parent_directory = os.path.abspath(os.path.join(directory, os.pardir))
     if not parent_directory:
         messagebox.showerror("Ошибка!", "Не удалось определить родительскую директорию.")
         return
-
     # удаление директорий кластеров
     documents, document_names = load_documents(directory)
     if documents is not None:
